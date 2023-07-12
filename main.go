@@ -151,8 +151,14 @@ func main() {
 	var logs = tview.NewTextView().SetChangedFunc(func() {
 		app.Draw()
 	})
-	var listView = tview.NewGrid().SetBorders(true)
-	var logsView = tview.NewGrid().SetBorders(true).SetRows(1, 5)
+	var listView = tview.NewGrid()
+	var logsView = tview.NewGrid()
+
+	urlform.SetBorder(true)
+	listView.SetBorder(true)
+	logsView.SetBorder(true)
+	logsView.SetBorders(true).SetRows(1, 5)
+	logsView.SetBorderPadding(-1, -1, -1, -1)
 
 	pages.AddPage("MainView", flex, true, true)
 	pages.AddPage("LogsView", logsView, true, false)
@@ -182,6 +188,10 @@ func main() {
 		} else if event.Rune() == 'a' {
 			urlform.Clear(true)
 			addUrlItemForm(pages, urlform, urlsList)
+			urlform.AddButton("Cancel", func() {
+				currentView = "MainView"
+				pages.SwitchToPage(currentView)
+			})
 			currentView = "UrlForm"
 			pages.SwitchToPage(currentView)
 		} else if event.Rune() == 'd' {
