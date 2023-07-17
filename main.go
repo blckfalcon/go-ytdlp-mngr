@@ -196,7 +196,7 @@ func main() {
 			pages.SwitchToPage(currentView)
 		} else if event.Rune() == 'd' {
 			curr := urlsList.GetCurrentItem()
-			urls[curr].Stop()
+			go urls[curr].Stop()
 			urlsList.RemoveItem(curr)
 			urls = append(urls[:curr], urls[curr+1:]...)
 		}
