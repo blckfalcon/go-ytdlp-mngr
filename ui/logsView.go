@@ -2,9 +2,8 @@ package ui
 
 import (
 	"bufio"
-	"fmt"
+	"bytes"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/blckfalcon/go-ytdlp-mngr/internal/url"
@@ -27,6 +26,7 @@ func newLogsView() *LogsView {
 	}
 
 	logsView.title.SetTextAlign(tview.AlignCenter).SetText("Stdout")
+	logsView.log.SetMaxLines(1000)
 
 	logsView.root.SetBorder(true)
 	logsView.root.SetBorders(true).SetRows(1, 5)
@@ -45,28 +45,28 @@ func (l *LogsView) setLogText(item *url.UrlItem) {
 		return
 	}
 
-	builder1 := strings.Builder{}
-	builder2 := strings.Builder{}
-	builder3 := strings.Builder{}
+	buffer1 := bytes.Buffer{}
+	buffer2 := bytes.Buffer{}
 	donePipeInLog := make(chan bool, 1)
 	donePipeErrLog := make(chan bool, 1)
 
-	readFromPipe := func(done chan bool, pipe io.Reader, writer io.Writer) {
+	readFromPipe := func(done <-chan bool, pipe io.Reader, writer io.Writer) {
 		scanner := bufio.NewScanner(pipe)
-		for {
+		for scanner.Scan() {
 			select {
 			case <-done:
 				return
 			default:
-				for scanner.Scan() {
-					fmt.Fprintln(writer, scanner.Text())
-					time.Sleep(50 * time.Millisecond)
+				line := scanner.Text() + "\n"
+				_, err := writer.Write([]byte(line))
+				if err != nil {
+					return
 				}
 			}
 		}
 	}
-	go readFromPipe(donePipeInLog, item.Stdout, &builder1)
-	go readFromPipe(donePipeErrLog, item.Stderr, &builder2)
+	go readFromPipe(donePipeInLog, item.Stdout, &buffer1)
+	go readFromPipe(donePipeErrLog, item.Stderr, &buffer2)
 
 	go func() {
 		for {
@@ -75,12 +75,9 @@ func (l *LogsView) setLogText(item *url.UrlItem) {
 				donePipeErrLog <- true
 				return
 			}
-			builder3.Reset()
-			builder3.WriteString(builder1.String())
-			builder3.WriteString(builder2.String())
-			log := builder3.String()
+			log := buffer1.String() + buffer2.String()
 			l.log.SetText(log)
-			time.Sleep(50 * time.Millisecond)
+			time.Sleep(200 * time.Millisecond)
 		}
 	}()
 }
