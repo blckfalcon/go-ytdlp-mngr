@@ -1,6 +1,9 @@
 package ui
 
 import (
+	"fmt"
+	"time"
+
 	"github.com/blckfalcon/go-ytdlp-mngr/internal/url"
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -65,6 +68,13 @@ func NewApp() *App {
 		return event
 	})
 
+	go func() {
+		for {
+			app.Draw()
+			time.Sleep(200 * time.Millisecond)
+		}
+	}()
+
 	app.SetRoot(app.pages, true)
 	app.EnableMouse(true)
 
@@ -96,11 +106,41 @@ func (a *App) AddItem() {
 	a.SwitchToPage("UrlFormView")
 }
 
+func (a *App) ItemStatusUpdater(item *url.UrlItem, itemIdx int) {
+	mainView := a.views["MainView"].(*MainView)
+
+	go func() {
+		defer mainView.wg.Done()
+
+		for {
+			select {
+			case <-mainView.stopCh:
+				return
+			default:
+				if item.Recording {
+					mainView.urlsList.SetItemText(itemIdx, fmt.Sprintf("%s ([green]recording[blue])", item.Url), "")
+				} else {
+					mainView.urlsList.SetItemText(itemIdx, fmt.Sprintf("%s ([red]done[blue])", item.Url), "")
+				}
+				time.Sleep(200 * time.Millisecond)
+			}
+		}
+	}()
+}
+
 func (a *App) RedrawList() {
 	mainView := a.views["MainView"].(*MainView)
+
+	close(mainView.stopCh)
+	mainView.wg.Wait()
+
+	mainView.stopCh = make(chan struct{})
+	mainView.wg.Add(len(a.urls))
+
 	mainView.urlsList.Clear()
-	for _, item := range a.urls {
+	for idx, item := range a.urls {
 		mainView.urlsList.AddItem(item.Url, "", 0, nil)
+		a.ItemStatusUpdater(item, idx)
 	}
 }
 
@@ -108,11 +148,14 @@ func (a *App) RemoveItem() {
 	if len(a.urls) == 0 {
 		return
 	}
+
 	mainView := a.views["MainView"].(*MainView)
+
 	curr := mainView.urlsList.GetCurrentItem()
-	mainView.urlsList.RemoveItem(curr)
 	go a.urls[curr].Stop()
 	a.urls = append(a.urls[:curr], a.urls[curr+1:]...)
+
+	a.RedrawList()
 }
 
 func (a *App) CleanUp() {
