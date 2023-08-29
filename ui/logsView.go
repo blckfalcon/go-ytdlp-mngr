@@ -39,9 +39,8 @@ func newLogsView() *LogsView {
 }
 
 func (l *LogsView) setLogText(item *url.UrlItem) {
-	l.log.Clear()
 	if !item.Recording {
-		l.log.SetText("yt-dlp is done")
+		l.SetLogMessage("yt-dlp is done")
 		return
 	}
 
@@ -73,6 +72,7 @@ func (l *LogsView) setLogText(item *url.UrlItem) {
 			if !item.Recording || !l.active {
 				donePipeInLog <- true
 				donePipeErrLog <- true
+				l.SetLogMessage("yt-dlp is done")
 				return
 			}
 			log := buffer1.String() + buffer2.String()
@@ -80,6 +80,11 @@ func (l *LogsView) setLogText(item *url.UrlItem) {
 			time.Sleep(200 * time.Millisecond)
 		}
 	}()
+}
+
+func (l *LogsView) SetLogMessage(msg string) {
+	l.log.Clear()
+	l.log.SetText(msg)
 }
 
 func (l *LogsView) IsActive() bool {
