@@ -43,9 +43,6 @@ func NewApp() *App {
 	app.views["LogsView"] = logsView
 	app.views["UrlFormView"] = urlFormView
 
-	logsView.log.SetChangedFunc(func() {
-		app.Draw()
-	})
 	logsView.root.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Rune() == 'q' {
 			app.SwitchToPage("MainView")
@@ -117,11 +114,18 @@ func (a *App) ItemStatusUpdater(item *url.UrlItem, itemIdx int) {
 			case <-mainView.stopCh:
 				return
 			default:
+				var recordStatus string
 				if item.Recording {
-					mainView.urlsList.SetItemText(itemIdx, fmt.Sprintf("%s ([green]recording[blue])", item.Url), "")
+					recordStatus = "[green]recording[blue]"
 				} else {
-					mainView.urlsList.SetItemText(itemIdx, fmt.Sprintf("%s ([red]done[blue])", item.Url), "")
+					recordStatus = "[red]done[blue]"
 				}
+
+				mainView.urlsList.SetItemText(
+					itemIdx,
+					fmt.Sprintf("%-50s (%s)", item.Url, recordStatus),
+					"",
+				)
 				time.Sleep(200 * time.Millisecond)
 			}
 		}

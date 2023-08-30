@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os/exec"
+	"sync"
 	"syscall"
 	"time"
 )
@@ -13,9 +14,11 @@ type UrlItem struct {
 	Url       string
 	cmd       *exec.Cmd
 	Stdout    io.ReadCloser
+	StdoutBuf chan []byte
 	Stderr    io.ReadCloser
-	doneCh    chan error
+	StderrBuf chan []byte
 	Recording bool
+	Logging   bool
 }
 
 func (u *UrlItem) Start() {
@@ -23,23 +26,50 @@ func (u *UrlItem) Start() {
 	u.Stdout, _ = u.cmd.StdoutPipe()
 	u.Stderr, _ = u.cmd.StderrPipe()
 
+	u.StdoutBuf = make(chan []byte, 1)
+	u.StderrBuf = make(chan []byte, 1)
+
 	err := u.cmd.Start()
 	if err != nil {
 		return
 	}
 
 	u.Recording = true
-	u.doneCh = make(chan error, 1)
+	u.Logging = false
+	var wg sync.WaitGroup
+	wg.Add(2)
 
 	go func(i *UrlItem) {
-		i.doneCh <- i.cmd.Wait()
+		_ = i.cmd.Wait()
+
+		i.Recording = false
+		wg.Wait()
+		close(i.StdoutBuf)
+		close(i.StderrBuf)
 	}(u)
 
 	go func(i *UrlItem) {
-		<-i.doneCh
-		i.Recording = false
-		i.Stdout.Close()
-		i.Stderr.Close()
+		buffer := make([]byte, 1000)
+		defer wg.Done()
+		for i.Recording {
+			_, _ = i.Stdout.Read(buffer)
+			if i.Logging {
+				i.StdoutBuf <- buffer
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
+	}(u)
+
+	go func(i *UrlItem) {
+		buffer := make([]byte, 1000)
+		defer wg.Done()
+		for i.Recording {
+			_, _ = i.Stderr.Read(buffer)
+			if i.Logging {
+				i.StderrBuf <- buffer
+			}
+			time.Sleep(200 * time.Millisecond)
+		}
 	}(u)
 }
 

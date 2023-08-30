@@ -44,34 +44,43 @@ func (l *LogsView) setLogText(item *url.UrlItem) {
 		return
 	}
 
+	item.Logging = true
 	buffer1 := bytes.Buffer{}
 	buffer2 := bytes.Buffer{}
 	donePipeInLog := make(chan bool, 1)
 	donePipeErrLog := make(chan bool, 1)
 
-	readFromPipe := func(done <-chan bool, pipe io.Reader, writer io.Writer) {
-		scanner := bufio.NewScanner(pipe)
-		for scanner.Scan() {
+	readFromPipe := func(done <-chan bool, data chan []byte, writer io.Writer) {
+		for {
 			select {
 			case <-done:
 				return
-			default:
-				line := scanner.Text() + "\n"
-				_, err := writer.Write([]byte(line))
-				if err != nil {
-					return
+			case d := <-data:
+				r := bytes.NewReader(d)
+				scanner := bufio.NewScanner(r)
+				for scanner.Scan() {
+					line := scanner.Text() + "\n"
+					_, err := writer.Write([]byte(line))
+					if err != nil {
+						return
+					}
 				}
+			default:
+				time.Sleep(200 * time.Millisecond)
 			}
 		}
 	}
-	go readFromPipe(donePipeInLog, item.Stdout, &buffer1)
-	go readFromPipe(donePipeErrLog, item.Stderr, &buffer2)
+	go readFromPipe(donePipeInLog, item.StderrBuf, &buffer1)
+	go readFromPipe(donePipeErrLog, item.StderrBuf, &buffer2)
 
 	go func() {
 		for {
 			if !item.Recording || !l.active {
 				donePipeInLog <- true
 				donePipeErrLog <- true
+				close(donePipeInLog)
+				close(donePipeErrLog)
+				item.Logging = false
 				l.SetLogMessage("yt-dlp is done")
 				return
 			}
