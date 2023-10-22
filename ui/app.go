@@ -31,17 +31,20 @@ func NewApp() *App {
 		urls:        []*url.UrlItem{},
 	}
 
-	mainView := newMainView()
-	logsView := newLogsView()
-	urlFormView := newUrlFormView()
+	mainView := NewMainView()
+	logsView := NewLogsView()
+	urlFormView := NewUrlFormView()
+	confirmQuitView := NewConfirmQuitView()
 
 	app.pages.AddPage("MainView", mainView.root, true, true)
+	app.pages.AddPage("ConfirmQuitView", confirmQuitView.root, false, false)
 	app.pages.AddPage("LogsView", logsView.root, true, false)
 	app.pages.AddPage("UrlFormView", urlFormView.root, true, false)
 
 	app.views["MainView"] = mainView
 	app.views["LogsView"] = logsView
 	app.views["UrlFormView"] = urlFormView
+	app.views["ConfirmQuitView"] = confirmQuitView
 
 	logsView.root.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Rune() == 'q' {
@@ -50,13 +53,20 @@ func NewApp() *App {
 		return event
 	})
 
+	confirmQuitView.root.SetDoneFunc(func(_ int, buttonLabel string) {
+		if buttonLabel == "Quit" {
+			app.Stop()
+		}
+		app.SwitchToPage("MainView")
+	})
+
 	mainView.urlsList.SetSelectedFunc(func(index int, _ string, _ string, _ rune) {
 		app.SwitchToPage("LogsView")
 		logsView.setLogText(app.urls[index])
 	})
 	mainView.root.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Rune() == 'q' {
-			app.Stop()
+			app.SwitchToPage("ConfirmQuitView")
 		} else if event.Rune() == 'a' {
 			app.AddItem()
 		} else if event.Rune() == 'd' {

@@ -10,7 +10,7 @@ type UrlFormView struct {
 	active bool
 }
 
-func newUrlFormView() *UrlFormView {
+func NewUrlFormView() *UrlFormView {
 	urlFormView := &UrlFormView{
 		root:   tview.NewForm(),
 		active: false,

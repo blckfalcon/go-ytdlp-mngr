@@ -16,7 +16,7 @@ type MainView struct {
 	stopCh   chan struct{}
 }
 
-func newMainView() *MainView {
+func NewMainView() *MainView {
 	mainView := &MainView{
 		root:     tview.NewFlex(),
 		grid:     tview.NewGrid(),

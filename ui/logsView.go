@@ -17,7 +17,7 @@ type LogsView struct {
 	active bool
 }
 
-func newLogsView() *LogsView {
+func NewLogsView() *LogsView {
 	logsView := &LogsView{
 		root:   tview.NewGrid(),
 		title:  tview.NewTextView(),
