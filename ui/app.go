@@ -12,6 +12,8 @@ import (
 type ViewController interface {
 	IsActive() bool
 	SetActive(bool)
+	Name() string
+	Root() tview.Primitive
 }
 
 type App struct {
@@ -36,15 +38,10 @@ func NewApp() *App {
 	urlFormView := NewUrlFormView()
 	confirmQuitView := NewConfirmQuitView()
 
-	app.pages.AddPage("MainView", mainView.root, true, true)
-	app.pages.AddPage("ConfirmQuitView", confirmQuitView.root, false, false)
-	app.pages.AddPage("LogsView", logsView.root, true, false)
-	app.pages.AddPage("UrlFormView", urlFormView.root, true, false)
-
-	app.views["MainView"] = mainView
-	app.views["LogsView"] = logsView
-	app.views["UrlFormView"] = urlFormView
-	app.views["ConfirmQuitView"] = confirmQuitView
+	app.AddView(mainView, true, true)
+	app.AddView(logsView, true, false)
+	app.AddView(urlFormView, true, false)
+	app.AddView(confirmQuitView, false, false)
 
 	logsView.root.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Rune() == 'q' {
@@ -86,6 +83,11 @@ func NewApp() *App {
 	app.EnableMouse(true)
 
 	return app
+}
+
+func (a *App) AddView(view ViewController, resize bool, visible bool) {
+	a.pages.AddPage(view.Name(), view.Root(), resize, visible)
+	a.views[view.Name()] = view
 }
 
 func (a *App) SwitchToPage(page string) {

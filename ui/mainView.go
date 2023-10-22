@@ -8,6 +8,7 @@ import (
 )
 
 type MainView struct {
+	name     string
 	root     *tview.Flex
 	grid     *tview.Grid
 	urlsList *tview.List
@@ -18,6 +19,7 @@ type MainView struct {
 
 func NewMainView() *MainView {
 	mainView := &MainView{
+		name:     "MainView",
 		root:     tview.NewFlex(),
 		grid:     tview.NewGrid(),
 		urlsList: tview.NewList(),
@@ -41,4 +43,12 @@ func (m *MainView) IsActive() bool {
 
 func (m *MainView) SetActive(status bool) {
 	m.active = status
+}
+
+func (m *MainView) Name() string {
+	return m.name
+}
+
+func (m *MainView) Root() tview.Primitive {
+	return m.root
 }

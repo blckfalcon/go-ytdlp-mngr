@@ -11,6 +11,7 @@ import (
 )
 
 type LogsView struct {
+	name   string
 	root   *tview.Grid
 	title  *tview.TextView
 	log    *tview.TextView
@@ -19,6 +20,7 @@ type LogsView struct {
 
 func NewLogsView() *LogsView {
 	logsView := &LogsView{
+		name:   "LogsView",
 		root:   tview.NewGrid(),
 		title:  tview.NewTextView(),
 		log:    tview.NewTextView(),
@@ -102,4 +104,12 @@ func (l *LogsView) IsActive() bool {
 
 func (l *LogsView) SetActive(status bool) {
 	l.active = status
+}
+
+func (l *LogsView) Name() string {
+	return l.name
+}
+
+func (l *LogsView) Root() tview.Primitive {
+	return l.root
 }

@@ -6,12 +6,14 @@ import (
 )
 
 type UrlFormView struct {
+	name   string
 	root   *tview.Form
 	active bool
 }
 
 func NewUrlFormView() *UrlFormView {
 	urlFormView := &UrlFormView{
+		name:   "UrlFormView",
 		root:   tview.NewForm(),
 		active: false,
 	}
@@ -38,4 +40,12 @@ func (u *UrlFormView) IsActive() bool {
 
 func (u *UrlFormView) SetActive(status bool) {
 	u.active = status
+}
+
+func (u *UrlFormView) Name() string {
+	return u.name
+}
+
+func (u *UrlFormView) Root() tview.Primitive {
+	return u.root
 }
