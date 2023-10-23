@@ -153,11 +153,15 @@ func (a *App) RedrawList() {
 	mainView.stopCh = make(chan struct{})
 	mainView.wg.Add(len(a.urls))
 
+	curr := mainView.urlsList.GetCurrentItem()
+
 	mainView.urlsList.Clear()
 	for idx, item := range a.urls {
 		mainView.urlsList.AddItem(item.Url, "", 0, nil)
 		a.ItemStatusUpdater(item, idx)
 	}
+
+	mainView.urlsList.SetCurrentItem(curr)
 }
 
 func (a *App) RemoveItem() {
