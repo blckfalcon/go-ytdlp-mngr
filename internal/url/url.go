@@ -1,7 +1,6 @@
 package url
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"os/exec"
@@ -85,13 +84,20 @@ func (u *UrlItem) Stop() {
 		log.Println(err)
 	}
 
-	startTime := time.Now()
+	backoff := 1 * time.Second
+	maxBackoff := 30 * time.Minute
 	for u.Recording {
-		elapsed := time.Since(startTime)
-		if elapsed > 1*time.Minute {
-			fmt.Println("Timeout occurred")
-			break
+		if u.cmd.ProcessState != nil && u.cmd.ProcessState.Exited() {
+			u.Recording = false
+			return
 		}
+
+		if backoff < maxBackoff {
+			backoff *= 2
+		} else {
+			u.Recording = false
+			return
+		}
+		time.Sleep(backoff)
 	}
-	u.Recording = false
 }
