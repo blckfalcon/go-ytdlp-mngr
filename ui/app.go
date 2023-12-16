@@ -57,10 +57,6 @@ func NewApp() *App {
 		app.SwitchToPage("MainView")
 	})
 
-	mainView.urlsList.SetSelectedFunc(func(index int, _ string, _ string, _ rune) {
-		app.SwitchToPage("LogsView")
-		logsView.setLogText(app.urls[index])
-	})
 	mainView.root.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Rune() == 'q' {
 			app.SwitchToPage("ConfirmQuitView")
@@ -68,6 +64,10 @@ func NewApp() *App {
 			app.AddItem()
 		} else if event.Rune() == 'd' {
 			app.RemoveItem()
+		} else if event.Key() == tcell.KeyEnter {
+			index := mainView.urlsList.GetCurrentItem()
+			app.SwitchToPage("LogsView")
+			logsView.setLogText(app.urls[index])
 		}
 		return event
 	})
