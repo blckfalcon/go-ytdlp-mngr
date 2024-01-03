@@ -9,6 +9,32 @@ import (
 	"time"
 )
 
+type DownloadStage int
+
+const (
+	StageNotStarted DownloadStage = iota
+	StageDownloading
+	StageProcessing
+	StageCompleted
+	StageError
+)
+
+func (s DownloadStage) String() string {
+	stages := [...]string{
+		"Not Started",
+		"Downloading",
+		"Processing",
+		"Completed",
+		"Error",
+	}
+
+	if s < StageNotStarted || s > StageError {
+		return "Unknown"
+	}
+
+	return stages[s]
+}
+
 type UrlItem struct {
 	Url       string
 	cmd       *exec.Cmd
@@ -16,7 +42,7 @@ type UrlItem struct {
 	StdoutBuf chan []byte
 	Stderr    io.ReadCloser
 	StderrBuf chan []byte
-	Recording bool
+	Recording DownloadStage
 	Logging   bool
 }
 
@@ -33,7 +59,7 @@ func (u *UrlItem) Start() {
 		return
 	}
 
-	u.Recording = true
+	u.Recording = StageDownloading
 	u.Logging = false
 	var wg sync.WaitGroup
 	wg.Add(2)
@@ -41,41 +67,36 @@ func (u *UrlItem) Start() {
 	go func(i *UrlItem) {
 		_ = i.cmd.Wait()
 
-		i.Recording = false
+		i.Recording = StageProcessing
 		wg.Wait()
 		close(i.StdoutBuf)
 		close(i.StderrBuf)
-	}(u)
 
-	go func(i *UrlItem) {
-		buffer := make([]byte, 1000)
-		defer wg.Done()
-		for i.Recording {
-			_, _ = i.Stdout.Read(buffer)
-			if i.Logging {
-				i.StdoutBuf <- buffer
-			}
-			time.Sleep(200 * time.Millisecond)
+		if i.cmd.ProcessState != nil && i.cmd.ProcessState.Exited() {
+			i.Recording = StageCompleted
 		}
 	}(u)
 
-	go func(i *UrlItem) {
+	sendReadToBuffer := func(bufCh chan<- []byte, reader io.Reader) {
 		buffer := make([]byte, 1000)
 		defer wg.Done()
-		for i.Recording {
-			_, _ = i.Stderr.Read(buffer)
-			if i.Logging {
-				i.StderrBuf <- buffer
+		for u.Recording == StageDownloading {
+			_, _ = reader.Read(buffer)
+			if u.Logging {
+				bufCh <- buffer
 			}
 			time.Sleep(200 * time.Millisecond)
 		}
-	}(u)
+	}
+
+	go sendReadToBuffer(u.StdoutBuf, u.Stdout)
+	go sendReadToBuffer(u.StderrBuf, u.Stderr)
 }
 
 func (u *UrlItem) Stop() {
 	var err error
 	if u.cmd.ProcessState != nil && u.cmd.ProcessState.Exited() {
-		u.Recording = false
+		u.Recording = StageCompleted
 		return
 	}
 
@@ -86,16 +107,16 @@ func (u *UrlItem) Stop() {
 
 	backoff := 1 * time.Second
 	maxBackoff := 30 * time.Minute
-	for u.Recording {
+	for u.Recording == StageProcessing {
 		if u.cmd.ProcessState != nil && u.cmd.ProcessState.Exited() {
-			u.Recording = false
+			u.Recording = StageCompleted
 			return
 		}
 
 		if backoff < maxBackoff {
 			backoff *= 2
 		} else {
-			u.Recording = false
+			u.Recording = StageCompleted
 			return
 		}
 		time.Sleep(backoff)

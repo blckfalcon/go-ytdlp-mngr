@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+	"regexp"
 	"time"
 
 	"github.com/blckfalcon/go-ytdlp-mngr/internal/url"
@@ -41,7 +42,7 @@ func NewLogsView() *LogsView {
 }
 
 func (l *LogsView) setLogText(item *url.UrlItem) {
-	if !item.Recording {
+	if item.Recording != url.StageDownloading {
 		l.SetLogMessage("yt-dlp is done")
 		return
 	}
@@ -61,7 +62,12 @@ func (l *LogsView) setLogText(item *url.UrlItem) {
 				r := bytes.NewReader(d)
 				scanner := bufio.NewScanner(r)
 				for scanner.Scan() {
-					line := scanner.Text() + "\n"
+					ansiRe := regexp.MustCompile(`\x1b[^m]*m`)
+					controlRe := regexp.MustCompile(`[\x00-\x1f\x7f]`)
+					line := scanner.Text()
+					line = ansiRe.ReplaceAllString(line, "")
+					line = controlRe.ReplaceAllString(line, "")
+					line = line + "\n"
 					_, err := writer.Write([]byte(line))
 					if err != nil {
 						return
@@ -72,12 +78,12 @@ func (l *LogsView) setLogText(item *url.UrlItem) {
 			}
 		}
 	}
-	go readFromPipe(donePipeInLog, item.StderrBuf, &buffer1)
+	go readFromPipe(donePipeInLog, item.StdoutBuf, &buffer1)
 	go readFromPipe(donePipeErrLog, item.StderrBuf, &buffer2)
 
 	go func() {
 		for {
-			if !item.Recording || !l.active {
+			if item.Recording != url.StageDownloading || !l.active {
 				donePipeInLog <- true
 				donePipeErrLog <- true
 				close(donePipeInLog)

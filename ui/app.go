@@ -65,6 +65,9 @@ func NewApp() *App {
 		} else if event.Rune() == 'd' {
 			app.RemoveItem()
 		} else if event.Key() == tcell.KeyEnter {
+			if mainView.urlsList.GetItemCount() == 0 {
+				return event
+			}
 			index := mainView.urlsList.GetCurrentItem()
 			app.SwitchToPage("LogsView")
 			logsView.setLogText(app.urls[index])
@@ -127,15 +130,22 @@ func (a *App) ItemStatusUpdater(item *url.UrlItem, itemIdx int) {
 				return
 			default:
 				var recordStatus string
-				if item.Recording {
-					recordStatus = "[green]recording[blue]"
-				} else {
-					recordStatus = "[red]done[blue]"
+				switch item.Recording {
+				case url.StageNotStarted:
+					recordStatus = "blue"
+				case url.StageDownloading:
+					recordStatus = "green"
+				case url.StageCompleted:
+					recordStatus = "darkcyan"
+				case url.StageProcessing:
+					recordStatus = "magenta"
+				case url.StageError:
+					recordStatus = "red"
 				}
 
 				mainView.urlsList.SetItemText(
 					itemIdx,
-					fmt.Sprintf("%-50s (%s)", item.Url, recordStatus),
+					fmt.Sprintf("%-50s [blue]([%s]%s[blue])", item.Url, recordStatus, item.Recording),
 					"",
 				)
 				time.Sleep(200 * time.Millisecond)
