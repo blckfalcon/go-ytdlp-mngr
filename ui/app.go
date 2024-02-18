@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/blckfalcon/go-ytdlp-mngr/internal/url"
@@ -64,6 +65,8 @@ func NewApp() *App {
 			app.AddItem()
 		} else if event.Rune() == 'd' {
 			app.RemoveItem()
+		} else if event.Rune() == 'f' {
+			app.SortByComplete()
 		} else if event.Key() == tcell.KeyEnter {
 			if mainView.urlsList.GetItemCount() == 0 {
 				return event
@@ -185,6 +188,11 @@ func (a *App) RemoveItem() {
 	go a.urls[curr].Stop()
 	a.urls = append(a.urls[:curr], a.urls[curr+1:]...)
 
+	a.RedrawList()
+}
+
+func (a *App) SortByComplete() {
+	sort.Sort(url.ByComplete(a.urls))
 	a.RedrawList()
 }
 

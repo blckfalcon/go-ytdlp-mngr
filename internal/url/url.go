@@ -122,3 +122,11 @@ func (u *UrlItem) Stop() {
 		time.Sleep(backoff)
 	}
 }
+
+type ByComplete []*UrlItem
+
+func (a ByComplete) Len() int      { return len(a) }
+func (a ByComplete) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ByComplete) Less(i, j int) bool {
+	return a[i].Recording > a[j].Recording
+}
