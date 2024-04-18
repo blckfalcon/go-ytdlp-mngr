@@ -54,13 +54,6 @@ func NewApp() *App {
 		return event
 	})
 
-	searchView.root.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Rune() == 'q' {
-			app.SwitchToPage("MainView")
-		}
-		return event
-	})
-
 	searchView.input.SetDoneFunc(func(key tcell.Key) {
 		searchView.results.Clear()
 
@@ -89,6 +82,10 @@ func NewApp() *App {
 		if event.Key() == tcell.KeyTab {
 			app.SetFocus(searchView.input)
 			return nil
+		} else if event.Rune() == 'q' {
+			app.SwitchToPage("MainView")
+		} else if event.Rune() == '/' {
+			app.SetFocus(searchView.input)
 		}
 		return event
 	})
