@@ -92,6 +92,10 @@ func (s *SearchView) SetupEvents() {
 		if event.Key() == tcell.KeyTab {
 			s.App.SetFocus(s.input)
 			return nil
+		} else if event.Rune() == 'j' {
+			return tcell.NewEventKey(tcell.KeyDown, 0, tcell.ModNone)
+		} else if event.Rune() == 'k' {
+			return tcell.NewEventKey(tcell.KeyUp, 0, tcell.ModNone)
 		} else if event.Rune() == 'q' {
 			s.App.SwitchToPage("MainView")
 		} else if event.Rune() == '/' {
