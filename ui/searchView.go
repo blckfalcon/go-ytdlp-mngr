@@ -1,29 +1,29 @@
 package ui
 
 import (
-	"github.com/blckfalcon/go-ytdlp-mngr/internal/url"
 	"github.com/gdamore/tcell/v2"
+	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/rivo/tview"
 )
 
 type SearchView struct {
+	App     *App
 	name    string
 	root    *tview.Grid
 	title   *tview.TextView
 	input   *tview.InputField
 	results *tview.List
-	urls    []*url.UrlItem
 	active  bool
 }
 
-func NewSearchView() *SearchView {
+func NewSearchView(app *App) *SearchView {
 	searchView := &SearchView{
+		App:     app,
 		name:    "SearchView",
 		root:    tview.NewGrid(),
 		title:   tview.NewTextView(),
 		input:   tview.NewInputField(),
 		results: tview.NewList(),
-		urls:    []*url.UrlItem{},
 		active:  false,
 	}
 
@@ -59,4 +59,44 @@ func (s *SearchView) Name() string {
 
 func (s *SearchView) Root() tview.Primitive {
 	return s.root
+}
+
+func (s *SearchView) SetupEvents() {
+	s.input.SetDoneFunc(func(key tcell.Key) {
+		s.results.Clear()
+
+		var urls []string
+		for _, el := range s.App.urls {
+			urls = append(urls, el.Url)
+		}
+
+		results := fuzzy.Find(s.input.GetText(), urls)
+
+		for _, item := range results {
+			s.results.AddItem(item, "", 0, nil)
+		}
+		s.App.SetFocus(s.results)
+	})
+
+	s.results.SetSelectedFunc(func(_ int, result string, _ string, _ rune) {
+		if s.results.GetItemCount() == 0 {
+			return
+		}
+		mainview := s.App.views["MainView"].(*MainView)
+		idxs := mainview.urlsList.FindItems(result, "", false, true)
+		mainview.urlsList.SetCurrentItem(idxs[0])
+		s.App.SwitchToPage("MainView")
+	})
+
+	s.results.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyTab {
+			s.App.SetFocus(s.input)
+			return nil
+		} else if event.Rune() == 'q' {
+			s.App.SwitchToPage("MainView")
+		} else if event.Rune() == '/' {
+			s.App.SetFocus(s.input)
+		}
+		return event
+	})
 }

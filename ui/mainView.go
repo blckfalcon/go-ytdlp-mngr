@@ -8,6 +8,7 @@ import (
 )
 
 type MainView struct {
+	App      *App
 	name     string
 	root     *tview.Flex
 	grid     *tview.Grid
@@ -17,8 +18,9 @@ type MainView struct {
 	stopCh   chan struct{}
 }
 
-func NewMainView() *MainView {
+func NewMainView(app *App) *MainView {
 	mainView := &MainView{
+		App:      app,
 		name:     "MainView",
 		root:     tview.NewFlex(),
 		grid:     tview.NewGrid(),
@@ -51,4 +53,39 @@ func (m *MainView) Name() string {
 
 func (m *MainView) Root() tview.Primitive {
 	return m.root
+}
+
+func (m *MainView) SetupEvents() {
+	m.root.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Rune() == 'q' {
+			m.App.SwitchToPage("ConfirmQuitView")
+		} else if event.Rune() == 'a' {
+			m.App.AddItem()
+		} else if event.Rune() == 'd' {
+			m.App.RemoveItem()
+		} else if event.Rune() == 'f' {
+			m.App.SortByComplete()
+		} else if event.Rune() == '/' {
+			searchView := m.App.views["SearchView"].(*SearchView)
+			searchView.input.SetText("")
+			searchView.results.Clear()
+
+			for _, item := range m.App.urls {
+				searchView.results.AddItem(item.Url, "", 0, nil)
+			}
+
+			m.App.DisplayPage("SearchView")
+		} else if event.Key() == tcell.KeyEnter {
+			if m.urlsList.GetItemCount() == 0 {
+				return event
+			}
+			index := m.urlsList.GetCurrentItem()
+
+			logsView := m.App.views["LogsView"].(*LogsView)
+			logsView.setLogText(m.App.urls[index])
+			m.App.SwitchToPage("LogsView")
+		}
+		return event
+	})
+
 }

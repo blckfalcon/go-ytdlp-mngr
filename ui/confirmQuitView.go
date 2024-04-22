@@ -5,13 +5,15 @@ import (
 )
 
 type ConfirmQuitView struct {
+	App    *App
 	name   string
 	root   *tview.Modal
 	active bool
 }
 
-func NewConfirmQuitView() *ConfirmQuitView {
+func NewConfirmQuitView(app *App) *ConfirmQuitView {
 	confirmQuitView := &ConfirmQuitView{
+		App:    app,
 		name:   "ConfirmQuitView",
 		root:   tview.NewModal(),
 		active: false,
@@ -37,4 +39,13 @@ func (c *ConfirmQuitView) Name() string {
 
 func (c *ConfirmQuitView) Root() tview.Primitive {
 	return c.root
+}
+
+func (c *ConfirmQuitView) SetupEvents() {
+	c.root.SetDoneFunc(func(_ int, buttonLabel string) {
+		if buttonLabel == "Quit" {
+			c.App.Stop()
+		}
+		c.App.SwitchToPage("MainView")
+	})
 }

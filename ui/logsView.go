@@ -8,10 +8,12 @@ import (
 	"time"
 
 	"github.com/blckfalcon/go-ytdlp-mngr/internal/url"
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
 type LogsView struct {
+	App    *App
 	name   string
 	root   *tview.Grid
 	title  *tview.TextView
@@ -19,8 +21,9 @@ type LogsView struct {
 	active bool
 }
 
-func NewLogsView() *LogsView {
+func NewLogsView(app *App) *LogsView {
 	logsView := &LogsView{
+		App:    app,
 		name:   "LogsView",
 		root:   tview.NewGrid(),
 		title:  tview.NewTextView(),
@@ -118,4 +121,13 @@ func (l *LogsView) Name() string {
 
 func (l *LogsView) Root() tview.Primitive {
 	return l.root
+}
+
+func (l *LogsView) SetupEvents() {
+	l.root.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Rune() == 'q' {
+			l.App.SwitchToPage("MainView")
+		}
+		return event
+	})
 }

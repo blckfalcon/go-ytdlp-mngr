@@ -6,13 +6,15 @@ import (
 )
 
 type UrlFormView struct {
+	App    *App
 	name   string
 	root   *tview.Form
 	active bool
 }
 
-func NewUrlFormView() *UrlFormView {
+func NewUrlFormView(app *App) *UrlFormView {
 	urlFormView := &UrlFormView{
+		App:    app,
 		name:   "UrlFormView",
 		root:   tview.NewForm(),
 		active: false,
