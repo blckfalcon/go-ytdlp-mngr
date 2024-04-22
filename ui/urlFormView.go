@@ -51,3 +51,6 @@ func (u *UrlFormView) Name() string {
 func (u *UrlFormView) Root() tview.Primitive {
 	return u.root
 }
+
+func (u *UrlFormView) SetupEvents() {
+}

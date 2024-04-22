@@ -14,6 +14,7 @@ type ViewController interface {
 	SetActive(bool)
 	Name() string
 	Root() tview.Primitive
+	SetupEvents()
 }
 
 type App struct {
@@ -33,22 +34,25 @@ func NewApp() *App {
 		urls:        []*url.UrlItem{},
 	}
 
-	mainView := NewMainView(app)
-	logsView := NewLogsView(app)
-	urlFormView := NewUrlFormView(app)
-	confirmQuitView := NewConfirmQuitView(app)
-	searchView := NewSearchView(app)
+	setupViews := []struct {
+		viewController ViewController
+		resize         bool
+		visible        bool
+		setupEvents    bool
+	}{
+		{viewController: NewMainView(app), resize: true, visible: true, setupEvents: true},
+		{viewController: NewLogsView(app), resize: true, visible: false, setupEvents: true},
+		{viewController: NewUrlFormView(app), resize: true, visible: false, setupEvents: false},
+		{viewController: NewConfirmQuitView(app), resize: false, visible: false, setupEvents: true},
+		{viewController: NewSearchView(app), resize: true, visible: false, setupEvents: true},
+	}
 
-	app.AddView(mainView, true, true)
-	app.AddView(logsView, true, false)
-	app.AddView(urlFormView, true, false)
-	app.AddView(confirmQuitView, false, false)
-	app.AddView(searchView, true, false)
-
-	logsView.SetupEvents()
-	searchView.SetupEvents()
-	confirmQuitView.SetupEvents()
-	mainView.SetupEvents()
+	for _, sv := range setupViews {
+		app.AddView(sv.viewController, sv.resize, sv.visible)
+		if sv.setupEvents {
+			sv.viewController.SetupEvents()
+		}
+	}
 
 	go func() {
 		for {
