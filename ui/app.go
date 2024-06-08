@@ -110,11 +110,14 @@ func (a *App) ItemStatusUpdater(item *url.UrlItem, itemIdx int) {
 	go func() {
 		defer mainView.wg.Done()
 
+		ticker := time.NewTicker(10 * time.Millisecond)
+		defer ticker.Stop()
+
 		for {
 			select {
 			case <-mainView.stopCh:
 				return
-			default:
+			case <-ticker.C:
 				var recordStatus string
 				switch item.Recording {
 				case url.StageNotStarted:
@@ -134,7 +137,6 @@ func (a *App) ItemStatusUpdater(item *url.UrlItem, itemIdx int) {
 					fmt.Sprintf("%-50s [blue]([%s]%s[blue])", item.Url, recordStatus, item.Recording),
 					"",
 				)
-				time.Sleep(200 * time.Millisecond)
 			}
 		}
 	}()

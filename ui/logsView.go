@@ -57,6 +57,8 @@ func (l *LogsView) setLogText(item *url.UrlItem) {
 	donePipeErrLog := make(chan bool, 1)
 
 	readFromPipe := func(done <-chan bool, data chan []byte, writer io.Writer) {
+		ticker := time.NewTicker(10 * time.Millisecond)
+		defer ticker.Stop()
 		for {
 			select {
 			case <-done:
@@ -76,8 +78,8 @@ func (l *LogsView) setLogText(item *url.UrlItem) {
 						return
 					}
 				}
-			default:
-				time.Sleep(200 * time.Millisecond)
+			case <-ticker.C:
+				continue
 			}
 		}
 	}
