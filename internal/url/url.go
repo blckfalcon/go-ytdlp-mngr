@@ -64,28 +64,27 @@ func (u *UrlItem) Start() {
 	var wg sync.WaitGroup
 	wg.Add(2)
 
-	go func(i *UrlItem) {
-		_ = i.cmd.Wait()
+	go func() {
+		_ = u.cmd.Wait()
 
-		i.Recording = StageProcessing
+		u.Recording = StageProcessing
 		wg.Wait()
-		close(i.StdoutBuf)
-		close(i.StderrBuf)
+		close(u.StdoutBuf)
+		close(u.StderrBuf)
 
-		if i.cmd.ProcessState != nil && i.cmd.ProcessState.Exited() {
-			i.Recording = StageCompleted
+		if u.cmd.ProcessState != nil && u.cmd.ProcessState.Exited() {
+			u.Recording = StageCompleted
 		}
-	}(u)
+	}()
 
 	sendReadToBuffer := func(bufCh chan<- []byte, reader io.Reader) {
-		buffer := make([]byte, 1000)
 		defer wg.Done()
+		buffer := make([]byte, 1000)
 		for u.Recording == StageDownloading {
 			_, _ = reader.Read(buffer)
 			if u.Logging {
 				bufCh <- buffer
 			}
-			time.Sleep(200 * time.Millisecond)
 		}
 	}
 
