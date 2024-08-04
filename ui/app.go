@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/blckfalcon/go-ytdlp-mngr/internal/url"
+	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 )
 
@@ -60,6 +61,14 @@ func NewApp() *App {
 			time.Sleep(200 * time.Millisecond)
 		}
 	}()
+
+	app.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		if event.Key() == tcell.KeyCtrlC {
+			app.SwitchToPage("ConfirmQuitView")
+			return nil
+		}
+		return event
+	})
 
 	app.SetRoot(app.pages, true)
 	app.EnableMouse(true)
