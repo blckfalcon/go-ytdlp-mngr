@@ -65,14 +65,17 @@ func (u *UrlItem) Start() {
 	wg.Add(2)
 
 	go func() {
-		_ = u.cmd.Wait()
+		err := u.cmd.Wait()
 
 		u.Recording = StageProcessing
 		wg.Wait()
 		close(u.StdoutBuf)
 		close(u.StderrBuf)
-
-		if u.cmd.ProcessState != nil && u.cmd.ProcessState.Exited() {
+		
+		switch {
+		case err != nil:
+			u.Recording = StageError
+		case u.cmd.ProcessState != nil && u.cmd.ProcessState.Exited():
 			u.Recording = StageCompleted
 		}
 	}()
