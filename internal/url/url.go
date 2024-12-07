@@ -47,7 +47,7 @@ type UrlItem struct {
 }
 
 func (u *UrlItem) Start() {
-	u.cmd = exec.Command("yt-dlp", "-f", "best[height<=1080]", "--fixup", "warn", u.Url)
+	u.cmd = exec.Command("youtube-dl", "-f", "best[height<=1080]", "--fixup", "warn", "-4", u.Url)
 	u.Stdout, _ = u.cmd.StdoutPipe()
 	u.Stderr, _ = u.cmd.StderrPipe()
 
