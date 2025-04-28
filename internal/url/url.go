@@ -71,7 +71,7 @@ func (u *UrlItem) Start() {
 		wg.Wait()
 		close(u.StdoutBuf)
 		close(u.StderrBuf)
-		
+
 		switch {
 		case err != nil:
 			u.Recording = StageError
@@ -97,6 +97,11 @@ func (u *UrlItem) Start() {
 
 func (u *UrlItem) Stop() {
 	var err error
+
+	if u.cmd.Process == nil {
+		return
+	}
+
 	if u.cmd.ProcessState != nil && u.cmd.ProcessState.Exited() {
 		u.Recording = StageCompleted
 		return
