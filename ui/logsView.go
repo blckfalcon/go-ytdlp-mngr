@@ -89,8 +89,6 @@ func (l *LogsView) setLogText(item *url.UrlItem) {
 	go func() {
 		for {
 			if item.Recording != url.StageDownloading || !l.active {
-				donePipeInLog <- true
-				donePipeErrLog <- true
 				close(donePipeInLog)
 				close(donePipeErrLog)
 				item.Logging = false
