@@ -185,6 +185,19 @@ func (a *App) RemoveItem() {
 	a.RedrawList()
 }
 
+func (a *App) RemoveCompleted() {
+	newUrls := make([]*url.UrlItem, 0, len(a.urls))
+	for _, item := range a.urls {
+		if item.Recording != url.StageCompleted {
+			newUrls = append(newUrls, item)
+		} else {
+			go item.Stop()
+		}
+	}
+	a.urls = newUrls
+	a.RedrawList()
+}
+
 func (a *App) SortByComplete() {
 	sort.Sort(url.ByComplete(a.urls))
 	a.RedrawList()

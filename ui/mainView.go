@@ -65,6 +65,8 @@ func (m *MainView) SetupEvents() {
 			m.App.RemoveItem()
 		} else if event.Rune() == 'f' {
 			m.App.SortByComplete()
+		} else if event.Rune() == 'C' {
+			m.App.RemoveCompleted()
 		} else if event.Rune() == 'j' {
 			return tcell.NewEventKey(tcell.KeyDown, 0, tcell.ModNone)
 		} else if event.Rune() == 'k' {
