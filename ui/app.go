@@ -141,9 +141,16 @@ func (a *App) ItemStatusUpdater(item *url.UrlItem, itemIdx int) {
 					recordStatus = "red"
 				}
 
+				var recordingTime string
+				if item.StoppedAt.IsZero() {
+					recordingTime = fmt.Sprintf("%v", time.Since(item.StartedAt).Round(time.Second))
+				} else {
+					recordingTime = fmt.Sprintf("%v", item.StoppedAt.Sub(item.StartedAt).Round(time.Second))
+				}
+
 				mainView.urlsList.SetItemText(
 					itemIdx,
-					fmt.Sprintf("%-50s [blue]([%s]%s[blue])", item.Url, recordStatus, item.Recording),
+					fmt.Sprintf("%-50s [blue]([%s]%s[blue]) ([grey]%s[blue])", item.Url, recordStatus, item.Recording, recordingTime),
 					"",
 				)
 			}

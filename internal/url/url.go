@@ -44,6 +44,8 @@ type UrlItem struct {
 	StderrBuf chan []byte
 	Recording DownloadStage
 	Logging   bool
+	StartedAt time.Time
+	StoppedAt time.Time
 }
 
 func (u *UrlItem) Start() {
@@ -59,6 +61,7 @@ func (u *UrlItem) Start() {
 		return
 	}
 
+	u.StartedAt = time.Now()
 	u.Recording = StageDownloading
 	u.Logging = false
 	var wg sync.WaitGroup
@@ -71,6 +74,8 @@ func (u *UrlItem) Start() {
 		wg.Wait()
 		close(u.StdoutBuf)
 		close(u.StderrBuf)
+
+		u.StoppedAt = time.Now()
 
 		switch {
 		case err != nil:
@@ -90,7 +95,6 @@ func (u *UrlItem) Start() {
 			}
 		}
 	}
-
 	go sendReadToBuffer(u.StdoutBuf, u.Stdout)
 	go sendReadToBuffer(u.StderrBuf, u.Stderr)
 }
