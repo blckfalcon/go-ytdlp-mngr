@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"sort"
+
 	"github.com/gdamore/tcell/v2"
 	"github.com/lithammer/fuzzysearch/fuzzy"
 	"github.com/rivo/tview"
@@ -70,10 +72,11 @@ func (s *SearchView) SetupEvents() {
 			urls = append(urls, el.Url)
 		}
 
-		results := fuzzy.Find(s.input.GetText(), urls)
+		results := fuzzy.RankFind(s.input.GetText(), urls)
+		sort.Sort(results)
 
 		for _, item := range results {
-			s.results.AddItem(item, "", 0, nil)
+			s.results.AddItem(item.Target, "", 0, nil)
 		}
 		s.App.SetFocus(s.results)
 	})
