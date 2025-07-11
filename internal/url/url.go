@@ -3,7 +3,6 @@ package url
 import (
 	"io"
 	"log"
-	"os/exec"
 	"sync"
 	"syscall"
 	"time"
@@ -37,7 +36,7 @@ func (s DownloadStage) String() string {
 
 type UrlItem struct {
 	Url       string
-	cmd       *exec.Cmd
+	cmd       Command
 	Stdout    io.ReadCloser
 	StdoutBuf chan []byte
 	Stderr    io.ReadCloser
@@ -46,10 +45,25 @@ type UrlItem struct {
 	Logging   bool
 	StartedAt time.Time
 	StoppedAt time.Time
+	executor  CommandExecutor
+}
+
+func NewUrlItem(url string) *UrlItem {
+	return &UrlItem{
+		Url:      url,
+		executor: &RealCommandExecutor{},
+	}
+}
+
+func NewUrlItemEx(url string, executor CommandExecutor) *UrlItem {
+	return &UrlItem{
+		Url:      url,
+		executor: executor,
+	}
 }
 
 func (u *UrlItem) Start() {
-	u.cmd = exec.Command("yt-dlp", "-f", "best[height<=1080]", "--fixup", "warn", "-4", u.Url)
+	u.cmd = u.executor.CreateCommand("yt-dlp", "-f", "best[height<=1080]", "--fixup", "warn", "-4", u.Url)
 	u.Stdout, _ = u.cmd.StdoutPipe()
 	u.Stderr, _ = u.cmd.StderrPipe()
 
@@ -80,7 +94,7 @@ func (u *UrlItem) Start() {
 		switch {
 		case err != nil:
 			u.Recording = StageError
-		case u.cmd.ProcessState != nil && u.cmd.ProcessState.Exited():
+		case u.cmd.GetProcessState() != nil && u.cmd.GetProcessState().Exited():
 			u.Recording = StageCompleted
 		}
 	}()
@@ -102,16 +116,16 @@ func (u *UrlItem) Start() {
 func (u *UrlItem) Stop() {
 	var err error
 
-	if u.cmd.Process == nil {
+	if u.cmd.GetProcess() == nil {
 		return
 	}
 
-	if u.cmd.ProcessState != nil && u.cmd.ProcessState.Exited() {
+	if u.cmd.GetProcessState() != nil && u.cmd.GetProcessState().Exited() {
 		u.Recording = StageCompleted
 		return
 	}
 
-	err = u.cmd.Process.Signal(syscall.SIGINT)
+	err = u.cmd.GetProcess().Signal(syscall.SIGINT)
 	if err != nil {
 		log.Println(err)
 	}
@@ -119,7 +133,7 @@ func (u *UrlItem) Stop() {
 	backoff := 1 * time.Second
 	maxBackoff := 30 * time.Minute
 	for u.Recording == StageProcessing {
-		if u.cmd.ProcessState != nil && u.cmd.ProcessState.Exited() {
+		if u.cmd.GetProcessState() != nil && u.cmd.GetProcessState().Exited() {
 			u.Recording = StageCompleted
 			return
 		}

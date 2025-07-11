@@ -96,7 +96,7 @@ func (a *App) DisplayPage(page string) {
 }
 
 func (a *App) AddItem() {
-	item := &url.UrlItem{}
+	item := url.NewUrlItem("")
 	urlFormView := a.views["UrlFormView"].(*UrlFormView)
 
 	okAction := func() {
